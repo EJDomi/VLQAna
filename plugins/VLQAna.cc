@@ -90,11 +90,14 @@ class VLQAna : public edm::EDFilter {
     edm::Service<TFileService> fs                 ; 
     std::map<std::string, TH1D*> h1_              ; 
     std::map<std::string, TH2D*> h2_              ; 
+    std::unique_ptr<BTagSFUtils> btagsfutils_;
 
     TtHEventInfoBranches selectedevt_; 
     TtHJetInfoBranches jets_ ; 
     TTree* tree_ ; 
-
+    
+    static const double CSVv2L;
+  
 };
 
 using namespace std; 
@@ -120,13 +123,15 @@ VLQAna::VLQAna(const edm::ParameterSet& iConfig) :
   HTMin_                  (iConfig.getParameter<double>           ("HTMin")), 
   doBTagSFUnc_            (iConfig.getParameter<bool>             ("doBTagSFUnc")),
   storePreselEvts_        (iConfig.getParameter<bool>             ("storePreselEvts")),
-  doPreselOnly_           (iConfig.getParameter<bool>             ("doPreselOnly")) 
+  doPreselOnly_           (iConfig.getParameter<bool>             ("doPreselOnly")), 
+  btagsfutils_            (new BTagSFUtils())
 {
 
 }
 
 VLQAna::~VLQAna() {
 }
+const double VLQAna::CSVv2L = 0.460;
 
 bool VLQAna::filter(edm::Event& evt, const edm::EventSetup& iSetup) {
   using namespace edm;
@@ -292,6 +297,11 @@ bool VLQAna::filter(edm::Event& evt, const edm::EventSetup& iSetup) {
   double toptagsf(1), toptagsfUp(1), toptagsfDown(1);
   double btagsf(1), btagsf_bcUp(1), btagsf_bcDown(1), btagsf_lUp(1), btagsf_lDown(1) ; 
 
+  std::vector<double>sjcsvs;
+  std::vector<double>sjpts;
+  std::vector<double>sjetas;
+  std::vector<int>sjflhads;
+
   if ( !isData ) { 
 
     evtwtHT = getHTReweightingSF(htak4.getHT(), 0) ; 
@@ -311,67 +321,90 @@ bool VLQAna::filter(edm::Event& evt, const edm::EventSetup& iSetup) {
 
     if ( theHiggs != nullptr || theAntiHiggs != nullptr ) {
 
-      double sj0csv(0) ; 
-      double sj0pt (0) ; 
-      double sj0fl (0) ;
-      double sj0eta(0) ; 
-      double sj1csv(0) ; 
-      double sj1pt (0) ; 
-      double sj1fl (0) ;
-      double sj1eta(0) ;
-      BTagSFUtils BTag; 
+//      double sj0csv(0) ; 
+//      double sj0pt (0) ; 
+//      double sj0fl (0) ;
+//      double sj0eta(0) ; 
+//      double sj1csv(0) ; 
+//      double sj1pt (0) ; 
+//      double sj1fl (0) ;
+//      double sj1eta(0) ;
+      
       if ( theHiggs != nullptr ) {
-        sj0csv=(theHiggs->getCSVSubjet0()) ; 
-        sj0pt =(theHiggs->getPtSubjet0()) ; 
-        sj0fl =(theHiggs->getHadronFlavourSubjet0()) ; 
-        sj0eta=(theHiggs->getEtaSubjet0()) ;
-        sj1csv=(theHiggs->getCSVSubjet1()) ; 
-        sj1pt =(theHiggs->getPtSubjet1()) ; 
-        sj1fl =(theHiggs->getHadronFlavourSubjet1()) ; 
-        sj1eta=(theHiggs->getEtaSubjet1()) ;
+          sjcsvs.push_back(theHiggs->getCSVSubjet0()) ;
+          sjcsvs.push_back(theHiggs->getCSVSubjet1()) ;
+
+          sjpts.push_back(theHiggs->getPtSubjet0()) ;
+          sjpts.push_back(theHiggs->getPtSubjet1()) ;
+
+          sjetas.push_back(theHiggs->getEtaSubjet0()) ;
+          sjetas.push_back(theHiggs->getEtaSubjet1()) ;
+
+          sjflhads.push_back(abs(theHiggs->getHadronFlavourSubjet0())) ;
+          sjflhads.push_back(abs(theHiggs->getHadronFlavourSubjet1())) ;
+//        sj0csv=(theHiggs->getCSVSubjet0()) ; 
+//        sj0pt =(theHiggs->getPtSubjet0()) ; 
+//        sj0fl =(theHiggs->getHadronFlavourSubjet0()) ; 
+//        sj0eta=(theHiggs->getEtaSubjet0()) ;
+//        sj1csv=(theHiggs->getCSVSubjet1()) ; 
+//        sj1pt =(theHiggs->getPtSubjet1()) ; 
+//        sj1fl =(theHiggs->getHadronFlavourSubjet1()) ; 
+//        sj1eta=(theHiggs->getEtaSubjet1()) ;
       }
       else if ( theAntiHiggs != nullptr ) {
-        sj0csv=(theAntiHiggs->getCSVSubjet0()) ; 
-        sj0pt =(theAntiHiggs->getPtSubjet0()) ; 
-        sj0fl =(theAntiHiggs->getHadronFlavourSubjet0()) ; 
-        sj0eta=(theAntiHiggs->getEtaSubjet0()) ;
-        sj1csv=(theAntiHiggs->getCSVSubjet1()) ; 
-        sj1pt =(theAntiHiggs->getPtSubjet1()) ; 
-        sj1fl =(theAntiHiggs->getHadronFlavourSubjet1()) ;
-        sj1eta=(theAntiHiggs->getEtaSubjet1()) ; 
+          sjcsvs.push_back(theAntiHiggs->getCSVSubjet0()) ;
+          sjcsvs.push_back(theAntiHiggs->getCSVSubjet1()) ;
+
+          sjpts.push_back(theAntiHiggs->getPtSubjet0()) ;
+          sjpts.push_back(theAntiHiggs->getPtSubjet1()) ;
+
+          sjetas.push_back(theAntiHiggs->getEtaSubjet0()) ;
+          sjetas.push_back(theAntiHiggs->getEtaSubjet1()) ;
+
+          sjflhads.push_back(abs(theAntiHiggs->getHadronFlavourSubjet0())) ;
+          sjflhads.push_back(abs(theAntiHiggs->getHadronFlavourSubjet1())) ;
+//        sj0csv=(theAntiHiggs->getCSVSubjet0()) ; 
+//        sj0pt =(theAntiHiggs->getPtSubjet0()) ; 
+//        sj0fl =(theAntiHiggs->getHadronFlavourSubjet0()) ; 
+//        sj0eta=(theAntiHiggs->getEtaSubjet0()) ;
+//        sj1csv=(theAntiHiggs->getCSVSubjet1()) ; 
+//        sj1pt =(theAntiHiggs->getPtSubjet1()) ; 
+//        sj1fl =(theAntiHiggs->getHadronFlavourSubjet1()) ;
+//        sj1eta=(theAntiHiggs->getEtaSubjet1()) ; 
       }
 
       ////// Get btag SFs
-      if ( sj0csv > 0.460 ) btagsf *= BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl, 0, 0) ; 
-      else btagsf *= ( 1 - BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,0)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
-      if ( sj1csv > 0.460 ) btagsf *= BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl, 0, 0) ; 
-      else btagsf *= ( 1 - BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,0)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
-
-      //// Get btag SF up bc err
-      if ( sj0csv > 0.460 ) btagsf_bcUp *= BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,1,0) ; 
-      else btagsf_bcUp *= ( 1 - BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
-      if ( sj1csv > 0.460 ) btagsf_bcUp *= BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,1,0) ; 
-      else btagsf_bcUp *= ( 1 - BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
-
-      if ( sj0csv > 0.460 ) btagsf_bcDown *= BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,-1,0) ; 
-      else btagsf_bcDown *= ( 1 - BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,-1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
-      if ( sj1csv > 0.460 ) btagsf_bcDown *= BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,-1,0) ; 
-      else btagsf_bcDown *= ( 1 - BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,-1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
-
-      //// Get btag SF up light err
-      if ( sj0csv > 0.460 ) btagsf_lUp *= BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,1) ; 
-      else btagsf_lUp *= ( 1 - BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,1)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
-      if ( sj1csv > 0.460 ) btagsf_lUp *= BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,1) ; 
-      else btagsf_lUp *= ( 1 - BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,1)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
-
-      if ( sj0csv > 0.460 ) btagsf_lDown *= BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,-1) ; 
-      else btagsf_lDown *= ( 1 - BTag.getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,-1)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
-      if ( sj1csv > 0.460 ) btagsf_lDown *= BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,-1) ; 
-      else btagsf_lDown *= ( 1 - BTag.getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,-1)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
+//      if ( sj0csv > 0.460 ) btagsf *= BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl, 0, 0) ; 
+//      else btagsf *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,0)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
+//      if ( sj1csv > 0.460 ) btagsf *= BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl, 0, 0) ; 
+//      else btagsf *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,0)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
+//
+//      //// Get btag SF up bc err
+//      if ( sj0csv > 0.460 ) btagsf_bcUp *= BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,1,0) ; 
+//      else btagsf_bcUp *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
+//      if ( sj1csv > 0.460 ) btagsf_bcUp *= BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,1,0) ; 
+//      else btagsf_bcUp *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
+//
+//      if ( sj0csv > 0.460 ) btagsf_bcDown *= BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,-1,0) ; 
+//      else btagsf_bcDown *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,-1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
+//      if ( sj1csv > 0.460 ) btagsf_bcDown *= BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,-1,0) ; 
+//      else btagsf_bcDown *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,-1,0)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
+//
+//      //// Get btag SF up light err
+//      if ( sj0csv > 0.460 ) btagsf_lUp *= BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,1) ; 
+//      else btagsf_lUp *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,1)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
+//      if ( sj1csv > 0.460 ) btagsf_lUp *= BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,1) ; 
+//      else btagsf_lUp *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,1)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
+//
+//      if ( sj0csv > 0.460 ) btagsf_lDown *= BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,-1) ; 
+//      else btagsf_lDown *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj0pt, sj0eta, sj0fl,0,-1)*BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj0pt, sj0fl) ); 
+//      if ( sj1csv > 0.460 ) btagsf_lDown *= BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,-1) ; 
+//      else btagsf_lDown *= ( 1 - BTagSFUtils::getBTagSF_CSVv2L(sj1pt, sj1eta, sj1fl,0,-1)*BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) )/( 1 - BTagSFUtils::getBTagEff_CSVv2L(sj1pt, sj1fl) ); 
 
     } //// Do b-tag SFs
 
   } //// if !isData
+  if ( !isData ) btagsfutils_->getBTagSFs (sjcsvs, sjpts, sjetas, sjflhads, CSVv2L, btagsf, btagsf_bcUp, btagsf_bcDown, btagsf_lUp, btagsf_lDown) ;
 
   if ( isRegionB ) {
     h1_["RegB_HT"] -> Fill(htak4.getHT(), evtwt) ; 

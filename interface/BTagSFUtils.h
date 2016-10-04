@@ -283,14 +283,10 @@ class BTagSFUtils {
       return eff ;
     }
 
-    double getBTagSF_CSVv2L (double jetPt, double jetEta, double jetFl, double errbc, double errl) {
-
+    static double getBTagSF_CSVv2L (double jetPt, double jetFl, double errbc, double errl) {
       double btagsf(1);
 
-      BTagEntry::JetFlavor fl ; 
-
-      double pt(jetPt) ;
-      double eta(jetEta) ; 
+      double pt(jetPt) ; 
       jetFl = abs(jetFl) ; 
       if ((jetFl == 5 || jetFl == 4)) {
         if (jetPt < 30.) {
@@ -313,64 +309,46 @@ class BTagSFUtils {
         }
       }
 
-      //TF1* SFb_CSVv2L = new TF1("SFb_CSVv2L", "0.908299+(2.70877e-06*(log(x+370.144)*(log(x+370.144)*(3-(-(104.614*log(x+370.144)))))))",0,2000) ;
+      TF1* SFb_CSVv2L = new TF1("SFb_CSVv2L", "0.908299+(2.70877e-06*(log(x+370.144)*(log(x+370.144)*(3-(-(104.614*log(x+370.144)))))))",0,2000) ;
 
-      //std::map<std::pair<double,double>,double> SFb_CSVv2L_err = { 
-      //  {std::make_pair(30,50)  , 0.022327613085508347}, 
-      //  {std::make_pair(50,70)  , 0.015330483205616474}, 
-      //  {std::make_pair(70,100) , 0.024493992328643799}, 
-      //  {std::make_pair(100,140), 0.020933238789439201}, 
-      //  {std::make_pair(140,200), 0.029219608753919601}, 
-      //  {std::make_pair(200,300), 0.039571482688188553}, 
-      //  {std::make_pair(300,670), 0.047329759448766708}  
-      //} ;
+      std::map<std::pair<double,double>,double> SFb_CSVv2L_err = { 
+        {std::make_pair(30,50)  , 0.022327613085508347}, 
+        {std::make_pair(50,70)  , 0.015330483205616474}, 
+        {std::make_pair(70,100) , 0.024493992328643799}, 
+        {std::make_pair(100,140), 0.020933238789439201}, 
+        {std::make_pair(140,200), 0.029219608753919601}, 
+        {std::make_pair(200,300), 0.039571482688188553}, 
+        {std::make_pair(300,670), 0.047329759448766708}  
+      } ;
 
-      //TF1* SFc_CSVv2L = new TF1("SFc_CSVv2L", "0.908299+(2.70877e-06*(log(x+370.144)*(log(x+370.144)*(3-(-(104.614*log(x+370.144)))))))",0,2000) ;
+      TF1* SFc_CSVv2L = new TF1("SFc_CSVv2L", "0.908299+(2.70877e-06*(log(x+370.144)*(log(x+370.144)*(3-(-(104.614*log(x+370.144)))))))",0,2000) ;
 
-      //std::map<std::pair<double,double>,double> SFc_CSVv2L_err = { 
-      //  {std::make_pair(30,50)  , 0.044655226171016693}, 
-      //  {std::make_pair(50,70)  , 0.030660966411232948}, 
-      //  {std::make_pair(70,100) , 0.048987984657287598}, 
-      //  {std::make_pair(100,140), 0.041866477578878403}, 
-      //  {std::make_pair(140,200), 0.058439217507839203}, 
-      //  {std::make_pair(200,300), 0.079142965376377106}, 
-      //  {std::make_pair(300,670), 0.094659518897533417}  
-      //} ;
+      std::map<std::pair<double,double>,double> SFc_CSVv2L_err = { 
+        {std::make_pair(30,50)  , 0.044655226171016693}, 
+        {std::make_pair(50,70)  , 0.030660966411232948}, 
+        {std::make_pair(70,100) , 0.048987984657287598}, 
+        {std::make_pair(100,140), 0.041866477578878403}, 
+        {std::make_pair(140,200), 0.058439217507839203}, 
+        {std::make_pair(200,300), 0.079142965376377106}, 
+        {std::make_pair(300,670), 0.094659518897533417}  
+      } ;
 
-      //TF1* SFl_CSVv2L = new TF1("SFl_CSVv2L", "((1.07278+(0.000535714*x))+(-1.14886e-06*(x*x)))+(7.0636e-10*(x*(x*x)))",0,2000) ;
-      //TF1* SFl_CSVv2L_errUp = new TF1("SFl_CSVv2L_errUp", "((1.12921+(0.000804962*x))+(-1.87332e-06*(x*x)))+(1.18864e-09*(x*(x*x)))",0,2000) ; 
-      //TF1* SFl_CSVv2L_errDown = new TF1("SFl_CSVv2L_errDown", "((1.01637+(0.000265653*x))+(-4.22531e-07*(x*x)))+(2.23396e-10*(x*(x*x)))",0,2000) ;
+      TF1* SFl_CSVv2L = new TF1("SFl_CSVv2L", "((1.07278+(0.000535714*x))+(-1.14886e-06*(x*x)))+(7.0636e-10*(x*(x*x)))",0,2000) ;
+      TF1* SFl_CSVv2L_errUp = new TF1("SFl_CSVv2L_errUp", "((1.12921+(0.000804962*x))+(-1.87332e-06*(x*x)))+(1.18864e-09*(x*(x*x)))",0,2000) ; 
+      TF1* SFl_CSVv2L_errDown = new TF1("SFl_CSVv2L_errDown", "((1.01637+(0.000265653*x))+(-4.22531e-07*(x*x)))+(2.23396e-10*(x*(x*x)))",0,2000) ;
 
-      //double errb(0), errc(0) ; 
-      //for ( auto const& ent : SFb_CSVv2L_err ) if (pt >= (ent.first).first && pt < (ent.first).second ) errb = ent.second ; 
-      //for ( auto const& ent : SFc_CSVv2L_err ) if (pt >= (ent.first).first && pt < (ent.first).second ) errc = ent.second ; 
+      double errb(0), errc(0) ; 
+      for ( auto const& ent : SFb_CSVv2L_err ) if (pt >= (ent.first).first && pt < (ent.first).second ) errb = ent.second ; 
+      for ( auto const& ent : SFc_CSVv2L_err ) if (pt >= (ent.first).first && pt < (ent.first).second ) errc = ent.second ; 
 
-      //if (jetFl == 5) btagsf = SFb_CSVv2L->Eval(pt) + errb*errbc; 
-      //else if (jetFl == 4) btagsf = SFc_CSVv2L->Eval(pt) + errc*errbc; 
-      //else if (jetFl == 0) btagsf = (
-      //    SFl_CSVv2L->Eval(pt)*(1 - abs(errl)) + 
-      //    (SFl_CSVv2L_errUp->Eval(pt)*abs(errl)*(1+errl)/2) + 
-      //    (SFl_CSVv2L_errDown->Eval(pt)*abs(errl)*(1-errl)/2) ) ;   
-      if (jetFl == 5) {
-            fl = BTagEntry::FLAV_B;
-            if (errbc == 1) btagsf = readerUp_->eval(fl,eta,pt);
-            else if (errbc == -1) btagsf = readerDown_->eval(fl,eta,pt);
-            else btagsf = reader_->eval(fl,eta,pt);
-      }
-      else if (jetFl == 4) {
-            fl = BTagEntry::FLAV_C;
-            if (errbc == 1) btagsf = readerUp_->eval(fl,eta,pt);
-            else if (errbc == -1) btagsf = readerDown_->eval(fl,eta,pt);
-            else btagsf = reader_->eval(fl,eta,pt);
-      }
-      else {
-            fl = BTagEntry::FLAV_UDSG;
-            if (errl == 1) btagsf = readerUp_->eval(fl,eta,pt);
-            else if (errl == -1) btagsf = readerDown_->eval(fl,eta,pt);
-            else btagsf = reader_->eval(fl,eta,pt);
-      }
-      return btagsf ;
-       
+      if (jetFl == 5) btagsf = SFb_CSVv2L->Eval(pt) + errb*errbc; 
+      else if (jetFl == 4) btagsf = SFc_CSVv2L->Eval(pt) + errc*errbc; 
+      else if (jetFl == 0) btagsf = (
+          SFl_CSVv2L->Eval(pt)*(1 - abs(errl)) + 
+          (SFl_CSVv2L_errUp->Eval(pt)*abs(errl)*(1+errl)/2) + 
+          (SFl_CSVv2L_errDown->Eval(pt)*abs(errl)*(1-errl)/2) ) ;  
+
+      return btagsf ; 
     }
 
 };
