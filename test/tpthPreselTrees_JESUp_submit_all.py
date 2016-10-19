@@ -43,21 +43,20 @@ def main():
     # We want to put all the CRAB project directories from the tasks we submit here into one common directory.
     # That's why we need to set this parameter (here or above in the configuration file, it does not matter, we will not overwrite it).
     config.section_("General")
-    config.General.workArea = '80X_trees_LHEWts_tZ_18Oct16'
+    config.General.workArea = '80X_JESUp_jobs_tZ_5Oct16'
     config.General.transferLogs = True
 
     config.section_("JobType")
     config.JobType.pluginName = 'Analysis'
     config.JobType.psetName = 'vlqana_cfg.py' 
-    config.JobType.pyCfgParams = ['isData=False','doPUReweightingOfficial=True','jecShift=0','jerShift=1', 'HTMin=800', 'storePreselEvts=True', 'storeLHEWts=True'] 
+    config.JobType.pyCfgParams = ['isData=False','doPUReweightingOfficial=True','jecShift=1','jerShift=1', 'HTMin=800','storePreselEvts=True','storeLHEWts=False'] 
     #config.JobType.pyCfgParams = ['isData=True','doPUReweightingOfficial=False','jecShift=0','jerShift=0', 'HTMin=800', 'storePreselEvts=True'] 
     config.JobType.inputFiles = [
-        'PUDistMC_2015_25ns_Startup_PoissonOOTPU.root'
-        ,'PUDistMC_2015_25ns_FallMC_matchData_PoissonOOTPU.root'
-        ,'PUDistMC_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU.root'
+        'PUDistMC_2016_25ns_SpringMC_PUScenarioV1_PoissonOOTPU.root'
         ,'RunII2016_PUXsec59550nb.root'
         ,'RunII2016_PUXsec66450nb.root'
         ,'RunII2016_PUXsec63000nb.root'
+        ,'btag-eff-subjet.root'
         ,'Fall15_25nsV2_MC_L2Relative_AK4PFchs.txt'
         ,'Fall15_25nsV2_MC_L3Absolute_AK4PFchs.txt'
         ,'Fall15_25nsV2_MC_Uncertainty_AK4PFchs.txt'
@@ -70,12 +69,9 @@ def main():
         ,'Fall15_25nsV2_DATA_L3Absolute_AK8PFchs.txt' 
         ,'Fall15_25nsV2_DATA_Uncertainty_AK4PFchs.txt' 
         ,'Fall15_25nsV2_DATA_Uncertainty_AK8PFchs.txt' 
-        ,'btag-eff-subjet.root'
         ,'subjet_CSVv2_ichep.csv'
         ]
     config.JobType.maxJobRuntimeMin = 2000
-    #config.JobType.maxMemoryMB = 2500
-
     config.section_("Data")
     config.Data.inputDataset = None
     config.Data.inputDBS = 'phys03'
@@ -85,11 +81,11 @@ def main():
     config.Data.unitsPerJob = 1
     config.Data.ignoreLocality = False
     config.Data.publication = False     
-    config.Data.outLFNDirBase = '/store/user/eschmitz/B2G/80X_VLQAna_LHEWts_tZ_18Oct16'
+    config.Data.outLFNDirBase = '/store/user/eschmitz/B2G/80X_VLQAna_LHEWts_tZ_5Oct16/JESUp/'
     
     config.section_("Site")
     config.Site.storageSite = 'T2_US_Nebraska'
-
+    #config.Site.whitelist = ['T2_CH_*','T2_US_*']
     #print 'Using config ' + options.config
     #print 'Writing to directory ' + options.dir
     
@@ -116,12 +112,12 @@ def main():
     for ijob, job in enumerate(jobs) :
 
         print "-->  ", job
-        pd = job.split('/')[1] + job.split('/')[2].split('-')[0]
-        processing = (job.split('/')[2]).split('-')[0] + (job.split('/')[2]).split('-')[1] + (job.split('/')[2]).split('-')[2]# + (job.split('/')[2]).split('-')[0] #for data
-        if (len(pd + '_' + processing)<=100): 
-          config.General.requestName = pd + '_' + processing
+        pd = job.split('/')[1]
+        processing = (job.split('/')[2]).split('-')[0] + (job.split('/')[2]).split('-')[1] + (job.split('/')[2]).split('-')[2]# + (job.split('/')[2]).split('-')[3] #for data
+        if (len('JESUp_'+ pd + '_' + processing)<=100): 
+          config.General.requestName = 'JESUp_' + pd + '_' + processing
         else:
-          config.General.requestName = pd 
+          config.General.requestName = 'JESUp_' + pd 
         config.Data.inputDataset = job
         print 'Submitting ' + config.General.requestName + ', dataset = ' + job
         print 'Configuration :'
