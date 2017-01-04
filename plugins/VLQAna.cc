@@ -193,11 +193,13 @@ bool VLQAna::filter(edm::Event& evt, const edm::EventSetup& iSetup) {
   jetAK8maker(evt, goodAK8Jets); 
 
   //// Event pre-selection
-  if (goodAK8Jets.size() < 1) return false ; 
+  if (goodAK8Jets.size() < 2) return false ; //  changed this from 1 to 2
   h1_["cutflow"] -> Fill(5, evtwt) ; 
 
   //// Event pre-selection
-  if (goodAK8Jets.at(0).getPt() < leadingJetPtMin_) return false ; 
+  if (goodAK8Jets.at(0).getPt() < leadingJetPtMin_) return false ;
+  if (goodAK8Jets.at(0).getEta() >= 2.4 ) return false ;  //   added this line
+  if (goodAK8Jets.at(0).getPrunedMass() <= 50) return false ; // added this line
   h1_["cutflow"] -> Fill(6, evtwt) ; 
 
   h1_["npv_noreweight"] -> Fill(*h_npv.product(), *h_evtwtGen.product()); 
